@@ -47,7 +47,7 @@ A run reads the account, prints what the chain shows and exits `0`, `1`, `2` or 
 
 Ahead of every finding, a report prints the facts it read for that account: thresholds, how many of the account's own signers each tier needs, flags, home domain, sponsor, each signer, what your policy declared (or that it declared nothing, which is what a `check` run did) and what the identity fetch saw, including the step that decided it. Those lines carry no severity and cannot fail a run; they are what makes "no findings" readable as an observation rather than a verdict.
 
-A 7-page documentation site is published at **[https://posture-sec.github.io/guage/](https://posture-sec.github.io/guage/)**, covering policy specifications, CLI mechanics, integration guides, and an interactive rule reference.
+An 8-page documentation site is published at **[https://posture-sec.github.io/guage/](https://posture-sec.github.io/guage/)**, covering policy specifications, CLI mechanics, integration guides, advice for each account role, a developer guide and a contributing guide.
 
 ## What it checks
 
@@ -196,7 +196,7 @@ Imports point one way: `model <- strkey, threshold, sanitize <- policy, source, 
 
 ## Documentation
 
-Docs site: [posture-sec.github.io/guage](https://posture-sec.github.io/guage/). Every page describes shipped behavior, and where a feature is parsed but not yet compared the page says so. It is built from `site/` and deployed by the `pages` workflow on each push to `main`.
+Docs site: [posture-sec.github.io/guage](https://posture-sec.github.io/guage/). Every page describes shipped behavior, and where a feature is parsed but not yet compared the page says so. It is built from `site/` and deployed by the `pages` workflow on each push to `main`. Start with the [guides](https://posture-sec.github.io/guage/guides.html) for the commands and per-role advice, the [developer guide](https://posture-sec.github.io/guage/developers.html) for the code, and the [contributing guide](https://posture-sec.github.io/guage/contributing.html) for the process.
 
 - `PRD.md`: scope, users, requirements
 - `ARCHITECTURE.md`: design, data models, decision records, red-team review
