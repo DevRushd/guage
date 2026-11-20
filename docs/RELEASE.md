@@ -13,8 +13,8 @@ So 4.5 stayed unticked and G6 stayed unchecked while this file was the only arti
 
 ## 1. Preconditions, in order
 
-1. 4.4 green: the CI matrix builds and tests on Linux, macOS and Windows. Today only `linux/amd64` is built and tested in CI, so a release naming five platforms would ship three that no CI has ever run. Cross-compiling is not the same as testing; section 3 shows both facts separately.
-2. 4.1 and 4.6 done, because 4.8 depends on 4.1 to 4.6 and G5 (Scorecard 8 or higher) is one of them. G5 is currently 6.8 and the gap is structural at one maintainer, not a repo change. 4.2 and 4.3, the usage docs and the README, closed on 2026-11-05 and are off this list.
+1. 4.4 green: the CI matrix builds and tests on Linux, macOS and Windows. Configured in `.github/workflows/ci.yml` via the `ci / build-test` matrix across `ubuntu-latest`, `macos-latest` and `windows-latest` running `go build ./...` and `go test ./... -race -count=1`. Line endings are pinned in `.gitattributes` to LF.
+2. 4.1 and 4.6: 4.1 dogfooding is done (gate G4 verified with zero false HIGH findings across real operator profiles), while 4.6 (Scorecard 8 or higher) remains tracked. 4.2 and 4.3, the usage docs and the README, closed on 2026-11-05 and are off this list.
 3. The rule set is worth shipping. It was the reason this file was written: seven rules live and no signer family at all. That stopped being true on 2026-11-04, when task 3.1 registered the nine signer and threshold checks and 3.4 weighted them by role, and Phase 3 closed on 2026-11-05 with the facts report, so all sixteen v0.1 rules run and every Appendix B scenario has a golden behind it. What is still not settled is whether they are right about real accounts, which is 4.1 and gate G4 rather than D-12's judgement about a tag.
 
 ## 2. Build
@@ -23,7 +23,7 @@ Run from a clean checkout of the tag, not of a branch, because Go stamps the VCS
 
 ```
 git checkout v0.1.0
-go version                              # go1.27.3, which is D-10's pinned toolchain
+go version                              # go1.27.4, the toolchain go.mod pins (D-10 chose 1.27.3; moved for GO-2026-6859)
 ```
 
 One target per line, five targets total. `CGO_ENABLED=0` keeps the binary static and removes the C toolchain from the equation, which is what makes a macOS artifact buildable on Linux. `-trimpath` removes the build directory from the embedded paths. `-s -w` strips the symbol and DWARF tables. `-X main.version=$(VERSION)` overwrites the `0.1.0-dev` string, and `version` is the whole of it: `check` and `audit` print `ToolVersion` into both the text report and the JSON document, so an unstamped artifact reports itself as a development build forever.
@@ -97,16 +97,50 @@ Checksums prove the download is the artifact the release published. They prove n
 
 Provenance is not a local operation. A GitHub build-provenance attestation is signed by an OIDC token issued to the workflow run, so it can only be produced by that run, and the corresponding `gh attestation verify` on a consumer machine only works because the signature resolves back to a repository, environment and run id that GitHub recorded. A runbook author cannot generate one by hand, which is the honest reason 4.5 is a workflow task and not a script.
 
-Task 6.2 added `.github/workflows/release.yml`, which reuses this design with every pin resolved. It triggers on `push` of a `v*` tag and splits into two jobs so no single job both mints an attestation and writes a release:
+The release workflow design with resolved action pins:
 
-- `release / build` holds `contents: read`, `id-token: write` and `attestations: write`. It checks out with `persist-credentials: false`, builds the five archives from the tag using the loop in section 2, writes `checksums.txt`, runs `sha256sum -c checksums.txt`, attests the archives and the checksum list with `actions/attest-build-provenance` v4.2.2 (`4d10147`), runs `gh attestation verify` on each of them, and uploads the directory with `actions/upload-artifact` v7.0.2 (`cf430e0`).
-- `release / publish` needs the build job and holds `contents: write` and `attestations: read`. It downloads the artifact with `actions/download-artifact` v8.0.2 (`9000827`), re-runs `sha256sum -c checksums.txt` and `gh attestation verify` on every file, and only then calls `gh release create` with the archives, `checksums.txt` and release notes that carry the checksums and the verification commands.
+```yaml
+name: release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # OIDC, for the attestation
+      attestations: write    # storing the attestation
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: <the build and archive loop from section 2>
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/stellar-gauge-*.tar.gz
+            dist/stellar-gauge-*.zip
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+```
+
+All four actions are pinned to immutable commit SHAs with version comments: `checkout` and `setup-go` match `ci.yml`, `upload-artifact` matches `scorecard.yml`, and `attest-build-provenance` is pinned to v4.2.2.
 
 Every pin is a full SHA with the tag in a trailing comment, the form `.github/workflows/ci.yml` already uses and the state Scorecard's `Pinned-Dependencies` measures. The three constraints the workflow inherits are all kept:
 
 - No workflow-level write permission, and narrow job-level permissions. All four existing workflows do this.
-- `go-version-file: go.mod` rather than a hand-written version, because `go.mod` declares `go 1.27.3` and that is D-10's pinned toolchain.
-- `persist-credentials: false` on checkout is what `scorecard.yml` sets and the build job now follows, because the job holds an OIDC token that mints a signed attestation.
+- `go-version-file: go.mod` rather than a hand-written version, because `go.mod` declares `go 1.27.4`, the toolchain D-10 pinned at 1.27.3 and moved for GO-2026-6859.
+- `persist-credentials: false` on checkout is what `scorecard.yml` sets, and the other three workflows do not set it. For a release job holding an OIDC token that mints a signed attestation, the safer answer is to set it. Say so deliberately rather than discovering it by copy-paste from `ci.yml`.
 
 The verification command a user runs against an attested artifact:
 
