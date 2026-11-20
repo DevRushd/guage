@@ -39,9 +39,9 @@ The repository is 100% ready when every task in Phases 0 to 6 is done and every 
 | 3 | Rules | 7 | 7 | 100% |
 | 4 | Dogfood and release v0.1.0 | 2 | 9 | 22% |
 | 5 | v0.2 features | 3 | 11 | 27% |
-| 6 | Release v0.2.0 and community | 0 | 5 | 0% |
+| 6 | Release v0.2.0 and community | 1 | 5 | 20% |
 | 7 (backlog) | Backlog | 0 | 4 | 0% |
-| **Phases 0 to 6** | **Readiness total** | **56** | **79** | **70%** |
+| **Phases 0 to 6** | **Readiness total** | **57** | **79** | **72%** |
 | Gates | G1 to G10 | 3 | 10 | 30% |
 <!-- PROGRESS:END -->
 
@@ -214,7 +214,7 @@ Constraint on the two remaining experimental tasks: Gauge never builds or submit
 
 ### Phase 6: Release v0.2.0 and community
 
-- [ ] **6.1** Update every doc for v0.2 behavior. M. Deps: Phase 5. Gate G7.
+- [x] **6.1** Update every doc for v0.2 behavior. M. Deps: Phase 5. Gate G7.
 - [ ] **6.2** Tag `v0.2.0` with attestation. S. Deps: 6.1.
 - [ ] **6.3** Review false-positive reports from external users and adjust rules. M. Deps: 6.2.
 - [ ] **6.4** Decide D-07: pursue funding or program applications, with adoption evidence. M. Deps: 6.2.
@@ -276,6 +276,7 @@ Newest first. One row per merged change.
 
 | Date (UTC) | Change | Tasks |
 |---|---|---|
+| 2026-11-20 | Aligned every document with v0.2 behavior per issue #61: updated `.github/pull_request_template.md` with verbatim issue #61 sections 2 and 6, marked ROADMAP.md task 6.1 complete, added changelog entry, refreshed progress table, updated ARCHITECTURE_ESSENTIALS.md and other docs to reflect v0.2 behavior, and verified all documentation aligns with implemented v0.2 behavior. | 6.1 |
 | 2026-11-09 | Updated Drips Wave submission packet (docs/WAVE_SUBMISSION.md) for Wave 11: confirmed 200 unit tests passing, all 16 rules registered, OpenSSF Scorecard at 6.8 with live badge, live documentation site at https://posture-sec.github.io/guage/, dynamic README metric sync, and updated sibling comparison data across org repositories. | none ticked |
 | 2026-11-09 | Finalized project naming by removing all occurrences of "working name" across repository documentation, PRD, architecture, and roadmap files. Implemented dynamic README metrics synchronization (`scripts/sync_readme.py`) generating live Shields.io endpoint JSON files under `site/data/` for 200 tests and 16 rules, and enforced with `--check` in the `roadmap-check` workflow. | none ticked |
 | 2026-11-09 | Add Docs Live badge to README and prominent navigation links to the 7-page live documentation site. | none ticked |

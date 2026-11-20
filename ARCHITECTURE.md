@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.1 target (includes a red-team pass, section 14); functional alpha through Phase 2 plus the account, flag and identity rules as of 2026-11-03, with threshold math and signer rules still pending |
+| Status | Draft v0.2 target (includes a red-team pass, section 14); functional alpha through Phase 2 plus the account, flag and identity rules as of 2026-11-03, with threshold math and signer rules still pending |
 | Date | 2026-10-28 |
 | Companion docs | `PRD.md`, `ARCHITECTURE_ESSENTIALS.md`, `ROADMAP.md`, `project_structure.md`, `AGENTS.md`, `CLAUDE.md` |
 | Tags | **[Verified]** checked against a source; **[Unverified]** believed or designed but untested |
@@ -30,7 +30,7 @@ Hard constraints:
 | Language | Go, current stable release at project start; version pinned in `go.mod` and CI (`go-version-file`) | Single static binary, strong standard library for HTTP and JSON, native fuzzing and race detector. Horizon and the Stellar Go SDK are Go [Likely] |
 | HTTP, JSON, hashing, flags | Standard library (`net/http`, `encoding/json`, `crypto/sha256`, `flag`) | No framework; `flag` with hand-rolled subcommands instead of a CLI framework |
 | TOML | `github.com/BurntSushi/toml` (the only third-party dependency) | Go has no TOML in the standard library. Check license and transitive dependencies in task 0.13 |
-| Strkey (address) validation | Own small package in v0.1, tested against reference vectors; revisit importing the Stellar Go SDK package | The SDK module is large; a 60-line checksum routine avoids its dependency tree (ADR-003) |
+| Strkey (address) validation | Own small package in v0.2, tested against reference vectors; revisit importing the Stellar Go SDK package | The SDK module is large; a 60-line checksum routine avoids its dependency tree (ADR-003) |
 | Stellar data | Horizon account endpoint behind a `Source` interface; Stellar RPC later | Horizon's long-term status is uncertain [Unverified] |
 | Testing | `go test -race`, `net/http/httptest` fake Horizon, captured JSON fixtures, golden files, native fuzzing | Offline, deterministic |
 | Static checks | `gofmt`, `go vet`, `staticcheck`, `govulncheck` | Dev-time and CI |
@@ -277,7 +277,7 @@ Implemented 2026-11-05 (task 3.7) as the zero-config half of the Done-when, whic
 
 ## 7. Data models
 
-As of 2026-11-05, `internal/model` carries the severity names, the finding constructor with its fingerprint and the sort order, the account snapshot and the fact shapes a report prints beside it, `internal/strkey` validates and classifies addresses, `internal/sanitize` cleans output, `internal/source` reads and strictly decodes Horizon responses, `internal/sep1` fetches a `stellar.toml` through the dial-time guard, `internal/threshold` answers reachability and the minimum signer count per tier, `internal/report` renders them, `internal/rules` holds all sixteen v0.1 rules plus `Facts`, `internal/run` orchestrates a run, and `cmd/stellar-gauge` exposes `check`, `audit` and `version`. A run can now exit 1. Six rules are HIGH at their baseline: the two account rules, `sig-no-signing-weight`, `sig-threshold-unreachable`, `sig-unexpected-signer` and `sig-missing-expected`; `sig-hashx` is WARN until that entry's own weight reaches a nonzero medium tier, five comparisons are WARN (`sig-threshold-order`, `sig-weight-drift`, `thr-drift`, `flag-drift`, `flag-undeclared-clawback`), the three `id-` rules are WARN, and `sig-single-key-high` is INFO because a default account reads that way and `check` declares no role. `--fail-on warn` is what makes the WARN family exit 1, and a declared role raises any of them to the value Appendix A names. JSON tags are snake_case field names and severity marshals as its lowercase name; the report schema and serialization behavior are fixed by task 2.6 and its golden files, extended by task 3.7's `accounts[].facts` object. Signer type values (`ed25519`, `hash_x`, `pre_auth_tx`, `signed_payload`) are internal labels; `internal/source` maps them from Horizon's `ed25519_public_key`, `sha256_hash`, `preauth_tx` and `ed25519_signed_payload`.
+As of 2026-11-05, `internal/model` carries the severity names, the finding constructor with its fingerprint and the sort order, the account snapshot and the fact shapes a report prints beside it, `internal/strkey` validates and classifies addresses, `internal/sanitize` cleans output, `internal/source` reads and strictly decodes Horizon responses, `internal/sep1` fetches a `stellar.toml` through the dial-time guard, `internal/threshold` answers reachability and the minimum signer count per tier, `internal/report` renders them, `internal/rules` holds all sixteen v0.2 rules plus `Facts`, `internal/run` orchestrates a run, and `cmd/stellar-gauge` exposes `check`, `audit` and `version`. A run can now exit 1. Six rules are HIGH at their baseline: the two account rules, `sig-no-signing-weight`, `sig-threshold-unreachable`, `sig-unexpected-signer` and `sig-missing-expected`; `sig-hashx` is WARN until that entry's own weight reaches a nonzero medium tier, five comparisons are WARN (`sig-threshold-order`, `sig-weight-drift`, `thr-drift`, `flag-drift`, `flag-undeclared-clawback`), the three `id-` rules are WARN, and `sig-single-key-high` is INFO because a default account reads that way and `check` declares no role. `--fail-on warn` is what makes the WARN family exit 1, and a declared role raises any of them to the value Appendix A names. JSON tags are snake_case field names and severity marshals as its lowercase name; the report schema and serialization behavior are fixed by task 2.6 and its golden files, extended by task 3.7's `accounts[].facts` object. Signer type values (`ed25519`, `hash_x`, `pre_auth_tx`, `signed_payload`) are internal labels; `internal/source` maps them from Horizon's `ed25519_public_key`, `sha256_hash`, `preauth_tx` and `ed25519_signed_payload`.
 
 `policy.Config` holds version, network, endpoints, accounts and accepts. `policy.Account` holds identity, name, role, expected signers, thresholds, flags, home domain and issuer lock intent. Pointer fields preserve omitted versus explicit empty/zero/false expectations, and since task 3.7 the report prints that distinction rather than only preserving it. `policy.Acceptance` carries rule, account, reason and an optional expiry string; strict decoding, date validation and non-acceptable-rule enforcement are implemented, and the role severities that once remained a task are Appendix A in `internal/policy/roles.go`, applied by the run. `github.com/BurntSushi/toml` v1.6.0 is the only module in `go.mod`, approved as ADR-004.
 
@@ -488,7 +488,7 @@ Design-review analysis. The scenarios below are not tests, and none of them has 
 | GB10 | Testnet versus mainnet mix-up | Defaults hide the mistake | M / M | Explicit network and passphrase verification | 2.4, 2.7 |
 | GB11 | Horizon is deprecated or reshaped | External dependency | M / M | Mitigated 2026-10-30: Horizon is not marked deprecated in the current docs, and RPC `getLedgerEntries` returns classic account entries, so the interface has a real second implementation. Field-shape drift is caught by the strict decode in 6.4 | 0.9, 7.1 |
 | GB12 | Rate limits on public endpoints | Many accounts, parallel fetch | M / L | Measured 2026-10-30: per-IP, 3600 per hour by default, 429 on exceed, no quota headers. Bounded concurrency, backoff on the 429 itself, and a run of 50 accounts costs about 51 requests (`PRD.md` 6.4) | 0.12, 2.7 |
-| GB13 | Maintainer overload | Third active project | H / H | D-04 was decided on 2026-10-30 to proceed, so this risk is carried openly rather than sequenced away: Phase 7 stays closed until v0.1.0 and the backlog is labelled for contributors | 0.3, D-04 |
+| GB13 | Maintainer overload | Third active project | H / H | D-04 was decided on 2026-10-30 to proceed, so this risk is carried openly rather than sequenced away: Phase 7 stays closed until v0.2.0 and the backlog is labelled for contributors | 0.3, D-04 |
 
 ### 14.2 Edge cases
 
@@ -524,8 +524,8 @@ Design-review analysis. The scenarios below are not tests, and none of them has 
 | GO4 | Web dashboard | Cut | No users yet |
 | GO5 | Asset and address reputation scoring | Cut | Webacy territory and needs a data moat |
 | GO6 | Soroban contract-account auditing | Cut | Other tools cover contracts |
-| GO7 | RPC source in v0.1 | Defer | Horizon first; interface keeps the door open |
-| GO8 | Two-endpoint quorum in v0.1 | Defer | P1; single endpoint with fail-closed first |
+| GO7 | RPC source in v0.2 | Defer | Horizon first; interface keeps the door open |
+| GO8 | Two-endpoint quorum in v0.2 | Defer | P1; single endpoint with fail-closed first |
 | GO9 | Importing the full Stellar SDK | Cut | Own strkey package suffices |
 | GO10 | A CLI framework | Cut | `flag` is enough |
 | GO11 | Trustline exposure scoring | Defer | Facts only, in P1 |
