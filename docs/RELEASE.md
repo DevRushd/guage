@@ -5,7 +5,7 @@ Task 4.5 asks for a release workflow with build provenance attestation and a ver
 - `.github/` is a protected path under AGENTS.md section 12, so a new workflow is an owner decision rather than a contributor's convenience.
 - An attestation workflow can only be proven by a tag, and cutting a release tag to prove the machinery that makes tags is backwards. D-12 already declines a tag until an auditing build exists, and of Phase 4's release preconditions 4.1, 4.4 and 4.6 are open alongside this task's own 4.5; 4.2 and 4.3 closed on 2026-11-05.
 
-So 4.5 stays unticked and G6 stays unchecked. What this file buys is that the person cutting `v0.1.0` is following steps that have been run, not steps invented at the tag.
+So 4.5 stayed unticked and G6 stayed unchecked while this file was the only artifact. Task 6.2 has since added `.github/workflows/release.yml`, which reuses the mechanism described here rather than inventing a second one; the runbook below stays the executable record of the build and checksum steps, and 4.5 and G6 still want a tag before either can claim a verified release. What this file buys is that the person cutting the tag is following steps that have been run, not steps invented at the tag.
 
 ## 0. What is true today
 
@@ -97,46 +97,16 @@ Checksums prove the download is the artifact the release published. They prove n
 
 Provenance is not a local operation. A GitHub build-provenance attestation is signed by an OIDC token issued to the workflow run, so it can only be produced by that run, and the corresponding `gh attestation verify` on a consumer machine only works because the signature resolves back to a repository, environment and run id that GitHub recorded. A runbook author cannot generate one by hand, which is the honest reason 4.5 is a workflow task and not a script.
 
-The workflow 4.5 will add, as a design rather than as a merged file:
+Task 6.2 added `.github/workflows/release.yml`, which reuses this design with every pin resolved. It triggers on `push` of a `v*` tag and splits into two jobs so no single job both mints an attestation and writes a release:
 
-```yaml
-name: release
-on:
-  push:
-    tags: ['v*']
-permissions:
-  contents: read
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write        # OIDC, for the attestation
-      attestations: write    # storing the attestation
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: false
-      - run: <the build and archive loop from section 2>
-      - uses: actions/attest-build-provenance@<full SHA>      # resolve at authoring time
-        with:
-          subject-path: dist/stellar-gauge-*
-      - uses: actions/upload-artifact@<full SHA>              # resolve at authoring time
-        with:
-          name: dist
-          path: dist/
-          digest: sha256
-```
+- `release / build` holds `contents: read`, `id-token: write` and `attestations: write`. It checks out with `persist-credentials: false`, builds the five archives from the tag using the loop in section 2, writes `checksums.txt`, runs `sha256sum -c checksums.txt`, attests the archives and the checksum list with `actions/attest-build-provenance` v4.2.2 (`4d10147`), runs `gh attestation verify` on each of them, and uploads the directory with `actions/upload-artifact` v7.0.2 (`cf430e0`).
+- `release / publish` needs the build job and holds `contents: write` and `attestations: read`. It downloads the artifact with `actions/download-artifact` v8.0.2 (`9000827`), re-runs `sha256sum -c checksums.txt` and `gh attestation verify` on every file, and only then calls `gh release create` with the archives, `checksums.txt` and release notes that carry the checksums and the verification commands.
 
-Two of those four pins are copied from `.github/workflows/ci.yml`, which is where this repository already runs them. The other two are `<full SHA>` on purpose: `attest-build-provenance` and `upload-artifact` are not used anywhere in this tree, so their SHAs were not read, and inventing a commit hash in a release runbook is worse than leaving it blank. Whoever opens 4.5 resolves both from the release being installed and records the version in the trailing comment, which is the convention the existing four workflows follow and the state Scorecard's `Pinned-Dependencies` measures: this repository scores 10 there, "8 of 8 GitHub-owned and 1 of 1 third-party actions pinned".
-
-Three constraints the release workflow inherits, one of which is not yet a house rule:
+Every pin is a full SHA with the tag in a trailing comment, the form `.github/workflows/ci.yml` already uses and the state Scorecard's `Pinned-Dependencies` measures. The three constraints the workflow inherits are all kept:
 
 - No workflow-level write permission, and narrow job-level permissions. All four existing workflows do this.
 - `go-version-file: go.mod` rather than a hand-written version, because `go.mod` declares `go 1.27.3` and that is D-10's pinned toolchain.
-- `persist-credentials: false` on checkout is what `scorecard.yml` sets, and the other three workflows do not set it. For a release job holding an OIDC token that mints a signed attestation, the safer answer is to set it. Say so deliberately rather than discovering it by copy-paste from `ci.yml`.
+- `persist-credentials: false` on checkout is what `scorecard.yml` sets and the build job now follows, because the job holds an OIDC token that mints a signed attestation.
 
 The verification command a user runs against an attested artifact:
 
@@ -158,6 +128,6 @@ What SLSA v1 build provenance proves: the bytes were produced by a specific work
 ## 6. What remains unproven here
 
 - No artifact was published and no tag was cut, so nothing in sections 4 and 5 has been executed. Section 2's build and section 3's checksum verification are the parts that were run, and their results are quoted above with the date.
-- The provenance workflow is a design with unresolved pins. Its shape is derived from this repository's existing workflows and from the action's documented permissions, not from a run.
+- The release workflow is merged but unexecuted. Every action is pinned, but no tag has been pushed through it, so its first real run is the `v0.2.0` tag itself.
 - The three non-Linux platforms are compiled and unexecuted until 4.4 lands.
 - `Packaging` and `Signed-Releases` stay at -1, and G6 stays unchecked, and both are correct readings of a repository that has released nothing. Writing the runbook does not move either number, and this branch claims neither.

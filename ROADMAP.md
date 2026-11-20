@@ -1,6 +1,6 @@
 # ROADMAP: Gauge
 
-Last updated: 2026-11-09T14:40Z (update Drips Wave 11 submission packet and sibling comparison)
+Last updated: 2026-11-20T16:44Z (prepare the v0.2.0 attested release workflow)
 Roadmap version: 3
 
 This file is the single source of truth for remaining work. It is read before every task and updated after every change.
@@ -215,7 +215,7 @@ Constraint on the two remaining experimental tasks: Gauge never builds or submit
 ### Phase 6: Release v0.2.0 and community
 
 - [ ] **6.1** Update every doc for v0.2 behavior. M. Deps: Phase 5. Gate G7.
-- [ ] **6.2** Tag `v0.2.0` with attestation. S. Deps: 6.1.
+- [ ] **6.2** Tag `v0.2.0` with attestation. S. Deps: 6.1. Prepared 2026-11-20: `.github/workflows/release.yml` builds the five archives from a `v*` tag, writes and checks `checksums.txt`, attests every archive and the list with `actions/attest-build-provenance` v4.2.2, verifies both in the build job and again before publishing, and keeps `contents: write` on the publish job alone. The tag itself is not cut: `v0.2.0` is the owner's act and 6.1 merges first, so this box stays unticked until a release exists and verifies.
 - [ ] **6.3** Review false-positive reports from external users and adjust rules. M. Deps: 6.2.
 - [ ] **6.4** Decide D-07: pursue funding or program applications, with adoption evidence. M. Deps: 6.2.
 - [ ] **6.5** Outreach to Stellar issuers, anchors and treasury operators. S. Deps: 6.2.
@@ -276,6 +276,7 @@ Newest first. One row per merged change.
 
 | Date (UTC) | Change | Tasks |
 |---|---|---|
+| 2026-11-20 | Prepared the v0.2.0 attested release path in `.github/workflows/release.yml`, reusing the task 4.5 mechanism from `docs/RELEASE.md` rather than inventing a second one. The workflow triggers only on a `v*` tag: the build job holds `contents: read`, `id-token: write` and `attestations: write`, builds the five archives with the runbook's cross-compile loop, writes `checksums.txt`, runs `sha256sum -c`, attests the archives and the list with `actions/attest-build-provenance` v4.2.2, and runs `gh attestation verify` on each file; the publish job downloads the artifact, re-runs both verifications and only then calls `gh release create`, holding `contents: write` as the single write in the workflow. Every action is pinned by full SHA with the tag in a comment, `persist-credentials: false` is set on the build checkout, and `go-version-file: go.mod` keeps D-10's toolchain. `docs/RELEASE.md` 4 and 6 now describe the merged workflow rather than a design with unresolved pins, `SECURITY.md` gains the consumer verification commands, `ARCHITECTURE.md` 10 and 11 name the workflow and its split permissions, and `project_structure.md` stops listing a release workflow as absent. No tag was cut and no release was published: 6.2 stays unticked for that reason, and the workflow's first real run is the tag. | 6.2 partly |
 | 2026-11-09 | Updated Drips Wave submission packet (docs/WAVE_SUBMISSION.md) for Wave 11: confirmed 200 unit tests passing, all 16 rules registered, OpenSSF Scorecard at 6.8 with live badge, live documentation site at https://posture-sec.github.io/guage/, dynamic README metric sync, and updated sibling comparison data across org repositories. | none ticked |
 | 2026-11-09 | Finalized project naming by removing all occurrences of "working name" across repository documentation, PRD, architecture, and roadmap files. Implemented dynamic README metrics synchronization (`scripts/sync_readme.py`) generating live Shields.io endpoint JSON files under `site/data/` for 200 tests and 16 rules, and enforced with `--check` in the `roadmap-check` workflow. | none ticked |
 | 2026-11-09 | Add Docs Live badge to README and prominent navigation links to the 7-page live documentation site. | none ticked |
