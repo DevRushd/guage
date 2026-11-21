@@ -1,6 +1,6 @@
 # ROADMAP: Gauge
 
-Last updated: 2026-11-21T07:00Z (restore lost backlog tasks 7.5 and 7.6, update progress table to 29/33, remove duplicate 7.44/7.45)
+Last updated: 2026-11-21T10:15Z (align v0.2 documentation across PRD, ARCHITECTURE, and essentials; close task 6.1)
 Roadmap version: 3
 
 This file is the single source of truth for remaining work. It is read before every task and updated after every change.
@@ -39,9 +39,9 @@ The repository is 100% ready when every task in Phases 0 to 6 is done and every 
 | 3 | Rules | 7 | 7 | 100% |
 | 4 | Dogfood and release v0.1.0 | 4 | 9 | 44% |
 | 5 | v0.2 features | 5 | 11 | 45% |
-| 6 | Release v0.2.0 and community | 0 | 5 | 0% |
+| 6 | Release v0.2.0 and community | 1 | 5 | 20% |
 | 7 (backlog) | Backlog | 29 | 33 | 87% |
-| **Phases 0 to 6** | **Readiness total** | **62** | **79** | **78%** |
+| **Phases 0 to 6** | **Readiness total** | **63** | **79** | **79%** |
 | Gates | G1 to G10 | 7 | 10 | 70% |
 <!-- PROGRESS:END -->
 
@@ -305,6 +305,7 @@ Newest first. One row per merged change.
 
 | Date (UTC) | Change | Tasks |
 |---|---|---|
+| 2026-11-20 | Task 6.1 (close #61): align v0.2 documents across PRD.md, ARCHITECTURE.md, and ARCHITECTURE_ESSENTIALS.md; mark task 6.1 complete. | 6.1 |
 | 2026-11-20 | Tasks 7.33 to 7.35 (close #199, #200, #201): sanitizer conformance matrix over all four entry points; `fetchAll` takes semaphore slots in policy order so the first account error survives and a queued account is never read; `Run` checks its context after observe and before returning so a cancelled run yields no report. Backlog rows added to `scripts/generate_issues.sh`. | 7.33, 7.34, 7.35 |
 | 2026-11-20 | Close #43, #44 and #47: task 3.7 zero-config facts report and example config closed with #43. Task 4.1 dogfooding on real operator accounts (Accensa, merchant, issuer) with declared expectations verified zero false HIGH findings, closing gate G4 and issue #44. Task 4.4 added cross-platform CI matrix across Linux, macOS and Windows in .github/workflows/ci.yml and pinned line endings in .gitattributes to LF, closing issue #47. | 3.7, 4.1, 4.4, G4 |
 | 2026-11-20 | Close readiness gates G8, G9 and G10: verify branch ruleset id 26055352 on main enforces required PRs, no deletion, no force push and strict status checks (ci / go, ci / vuln, roadmap-check / gate) with direct push rejection (G8); verify section 8 risk register has mitigations or accepted decisions for all High-rated risks (G9); verify ROADMAP.md is current with progress table regenerated and Last updated stamped in UTC (G10). Closes #73, closes #74, closes #75 | G8, G9, G10 |
